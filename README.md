@@ -5,7 +5,7 @@ The phone works normally when a YubiKey is in the USB-C port. When the key is no
 - The app suspends all apps that are not on the allowlist. A suspended app does not open, does not show notifications and does not show in the recent-apps screen.
 - A minimal launcher replaces the normal launcher.
 
-The allowlist is resolved on the device: the default phone app, the default SMS app, the clock, the camera, maps, and Settings. Launchers, keyboards and this app are never suspended.
+The allowlist is resolved on the device: the default phone app, contacts, the default SMS app, the clock, the camera, maps, and Settings. If you did not select a default app for a function, only the preinstalled apps for it are allowed. Launchers, keyboards and this app are never suspended.
 
 The app uses the Device Owner API. It does not need root.
 
@@ -41,6 +41,7 @@ adb shell am broadcast -n $R --es key present   # full mode
 adb shell am broadcast -n $R --es key absent    # dumb mode
 adb shell am broadcast -n $R --es key real      # use the real USB state
 adb shell am broadcast -n $R --es cmd release   # undo all changes and remove the device owner
+adb shell am broadcast -n $R --es cmd status    # log USB devices, the allowlist and the apps that dumb mode suspends. No changes.
 adb logcat -s AppBlocker
 ```
 
