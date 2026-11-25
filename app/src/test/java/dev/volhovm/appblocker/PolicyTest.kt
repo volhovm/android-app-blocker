@@ -61,6 +61,25 @@ class PolicyTest {
         assertNull(result)
     }
 
+    private val googleMaps = Handler("com.google.android.apps.maps", isSystem = true)
+    private val uber = Handler("com.ubercab", isSystem = false)
+    private val osmand = Handler("net.osmand", isSystem = false)
+
+    @Test
+    fun allowedHandlerIsTheDefaultOneWhenTheUserSelectedIt() {
+        assertEquals(setOf("net.osmand"), Policy.allowedHandlers(default = "net.osmand", handlers = listOf(googleMaps, uber, osmand)))
+    }
+
+    @Test
+    fun allowedHandlersAreOnlyTheSystemOnesWithoutADefault() {
+        assertEquals(setOf("com.google.android.apps.maps"), Policy.allowedHandlers(default = null, handlers = listOf(uber, googleMaps, osmand)))
+    }
+
+    @Test
+    fun allowedHandlersAreAllHandlersWithoutADefaultOrASystemHandler() {
+        assertEquals(setOf("com.ubercab", "net.osmand"), Policy.allowedHandlers(default = null, handlers = listOf(uber, osmand)))
+    }
+
     @Test
     fun keyIsPresentOnlyWhenAYubicoDeviceIsAttached() {
         assertTrue(Policy.isKeyPresent(listOf(0x18d1, 0x1050)))

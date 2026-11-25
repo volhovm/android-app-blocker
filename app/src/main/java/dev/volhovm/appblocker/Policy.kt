@@ -7,6 +7,9 @@ data class HomeApp(val packageName: String, val className: String, val isSystem:
     val flatName: String get() = "$packageName/$className"
 }
 
+/** An app that can handle an intent. */
+data class Handler(val packageName: String, val isSystem: Boolean)
+
 /** Pure decisions, without Android framework calls, so that JVM unit tests can cover them. */
 object Policy {
     fun packagesToSuspend(
@@ -24,6 +27,16 @@ object Policy {
             ?: real.firstOrNull { it.packageName == currentDefault }
             ?: real.firstOrNull { it.isSystem }
             ?: real.firstOrNull()
+    }
+
+    /**
+     * The default handler if the user selected one. Otherwise only the preinstalled handlers: without this rule,
+     * every app that opens geo: links (Uber, Waze, Zoom) would be on the allowlist.
+     */
+    fun allowedHandlers(default: String?, handlers: List<Handler>): Set<String> {
+        if (default != null) return setOf(default)
+        val system = handlers.filter { it.isSystem }.ifEmpty { handlers }
+        return system.map { it.packageName }.toSet()
     }
 
     const val YUBICO_VENDOR_ID = 0x1050

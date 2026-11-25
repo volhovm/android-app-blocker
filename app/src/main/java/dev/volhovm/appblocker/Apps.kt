@@ -6,6 +6,7 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.AlarmClock
+import android.provider.ContactsContract
 import android.provider.MediaStore
 import android.provider.Settings
 import android.provider.Telephony
@@ -35,12 +36,13 @@ object Apps {
     fun inputMethods(context: Context): Set<String> =
         context.getSystemService(InputMethodManager::class.java).inputMethodList.map { it.packageName }.toSet()
 
-    /** Phone, SMS, clock, camera, maps and Settings. The roles are resolved, so the list works on any device. */
+    /** Phone, contacts, SMS, clock, camera, maps and Settings. The roles are resolved, so the list works on any device. */
     fun allowlist(context: Context): Set<String> {
         val pm = context.packageManager
         return buildSet {
             context.getSystemService(TelecomManager::class.java).defaultDialerPackage?.let(::add)
             Telephony.Sms.getDefaultSmsPackage(context)?.let(::add)
+            addAll(handlers(pm, Intent(Intent.ACTION_VIEW, ContactsContract.Contacts.CONTENT_URI)))
             addAll(handlers(pm, Intent(AlarmClock.ACTION_SHOW_ALARMS)))
             addAll(handlers(pm, Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA)))
             addAll(handlers(pm, Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q="))))
@@ -49,12 +51,14 @@ object Apps {
         }
     }
 
-    /** The default handler of the intent. If the user did not select a default, all handlers. */
+    /** The handlers of the intent that the allowlist permits. See [Policy.allowedHandlers]. */
     private fun handlers(pm: PackageManager, intent: Intent): Set<String> {
         val flags = PackageManager.ResolveInfoFlags.of(PackageManager.MATCH_DEFAULT_ONLY.toLong())
-        val default = pm.resolveActivity(intent, flags)?.activityInfo?.packageName
         // "android" is the system chooser: the user did not select a default handler.
-        if (default != null && default != "android") return setOf(default)
-        return pm.queryIntentActivities(intent, flags).map { it.activityInfo.packageName }.toSet()
+        val default = pm.resolveActivity(intent, flags)?.activityInfo?.packageName?.takeIf { it != "android" }
+        val handlers = pm.queryIntentActivities(intent, flags).map {
+            Handler(it.activityInfo.packageName, (it.activityInfo.applicationInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0)
+        }
+        return Policy.allowedHandlers(default, handlers)
     }
 }

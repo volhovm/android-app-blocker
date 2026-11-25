@@ -37,13 +37,7 @@ object ModeController {
         // Order: suspend first, then the launcher, then the home screen. Thus no blocked app stays on screen.
         when (mode) {
             Mode.DUMB -> {
-                val target = Policy.packagesToSuspend(
-                    launchable = Apps.launchablePackages(pm),
-                    allowlist = Apps.allowlist(context),
-                    homePackages = homes.map { it.packageName }.toSet(),
-                    inputMethods = Apps.inputMethods(context),
-                    self = context.packageName,
-                )
+                val target = suspendTargets(context, homes)
                 setSuspended(dpm, admin, prefs.suspended - target, false)
                 val failed = setSuspended(dpm, admin, target, true)
                 prefs.suspended = target - failed
@@ -68,6 +62,15 @@ object ModeController {
         }
         return mode
     }
+
+    /** The packages that dumb mode suspends. */
+    fun suspendTargets(context: Context, homes: List<HomeApp>): Set<String> = Policy.packagesToSuspend(
+        launchable = Apps.launchablePackages(context.packageManager),
+        allowlist = Apps.allowlist(context),
+        homePackages = homes.map { it.packageName }.toSet(),
+        inputMethods = Apps.inputMethods(context),
+        self = context.packageName,
+    )
 
     /** Undoes all changes and removes the device owner. After this, you can uninstall the app. */
     fun release(context: Context) {
