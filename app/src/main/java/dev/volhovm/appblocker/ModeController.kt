@@ -13,12 +13,12 @@ import android.util.Log
 object ModeController {
     private const val TAG = "AppBlocker"
 
-    /** Returns the applied mode, or null if this app is not the device owner. */
-    fun sync(context: Context): Mode? {
+    /** Applies the mode for the current key state. Does nothing if this app is not the device owner. */
+    fun sync(context: Context) {
         val dpm = context.getSystemService(DevicePolicyManager::class.java)
         if (!dpm.isDeviceOwnerApp(context.packageName)) {
             Log.w(TAG, "Not the device owner: no change")
-            return null
+            return
         }
         val admin = AdminReceiver.component(context)
         val pm = context.packageManager
@@ -60,7 +60,7 @@ object ModeController {
             prefs.mode = mode
             context.startActivity(Apps.homeIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         }
-        return mode
+        KeyMonitorService.showMode(context, mode)
     }
 
     /** The packages that dumb mode suspends. */

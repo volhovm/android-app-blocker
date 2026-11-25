@@ -63,6 +63,18 @@ Only `adb shell` can send to this receiver: it needs the `DUMP` permission.
 
 Android accepts the device owner command only if the phone has no accounts and only one user.
 
+Some apps add their account again at once when you remove it. On the Fairphone 5, WhatsApp, Airbnb and imo did this. This method worked on Android 15:
+
+```sh
+adb shell dumpsys account | grep 'Account {'        # find the account types that remain
+adb shell pm disable-user --user 0 com.whatsapp      # for each app that owns a remaining account. The app data stays.
+# Restart the phone. After the restart, Android does not count the accounts of disabled apps.
+adb shell dpm set-device-owner dev.volhovm.appblocker/.AdminReceiver
+adb shell pm enable --user 0 com.whatsapp
+```
+
+To start in full mode, send `--es key present` to the debug receiver before the device owner command. Send `--es key real` when you are ready to test with the key.
+
 ## Remove the app
 
 Use the `release` command above. Then uninstall the app with `adb uninstall dev.volhovm.appblocker`.

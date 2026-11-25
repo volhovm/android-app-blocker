@@ -30,7 +30,7 @@ class KeyMonitorService : Service() {
         super.onCreate()
         val nm = getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(NotificationChannel(CHANNEL, "Key monitor", NotificationManager.IMPORTANCE_LOW))
-        val notification = notification(Prefs(this).mode)
+        val notification = notification(this, Prefs(this).mode)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
         } else {
@@ -62,27 +62,31 @@ class KeyMonitorService : Service() {
     override fun onBind(intent: Intent?) = null
 
     private fun sync() {
-        val mode = ModeController.sync(this) ?: return
-        getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, notification(mode))
+        ModeController.sync(this)
     }
-
-    private fun notification(mode: Mode?): Notification =
-        Notification.Builder(this, CHANNEL)
-            .setSmallIcon(android.R.drawable.ic_lock_lock)
-            .setContentTitle(
-                when (mode) {
-                    Mode.FULL -> "Key present: full mode"
-                    Mode.DUMB -> "Key absent: dumb mode"
-                    null -> "Key monitor"
-                },
-            )
-            .setOngoing(true)
-            .build()
 
     companion object {
         private const val TAG = "AppBlocker"
         private const val CHANNEL = "monitor"
         private const val NOTIFICATION_ID = 1
+
+        /** Shows the mode in the notification of the service. */
+        fun showMode(context: Context, mode: Mode) {
+            context.getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, notification(context, mode))
+        }
+
+        private fun notification(context: Context, mode: Mode?): Notification =
+            Notification.Builder(context, CHANNEL)
+                .setSmallIcon(android.R.drawable.ic_lock_lock)
+                .setContentTitle(
+                    when (mode) {
+                        Mode.FULL -> "Key present: full mode"
+                        Mode.DUMB -> "Key absent: dumb mode"
+                        null -> "Key monitor"
+                    },
+                )
+                .setOngoing(true)
+                .build()
 
         fun start(context: Context) {
             context.startForegroundService(Intent(context, KeyMonitorService::class.java))
